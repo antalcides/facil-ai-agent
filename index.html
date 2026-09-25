@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fácil con AI Agent — Ciencias & Código</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="stylesheet" href="style.css">
+    <!-- KaTeX para matemáticas / LaTeX -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+    <!-- highlight.js para resaltado de sintaxis -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <!-- JSZip -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- html2pdf para exportar chat a PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="header-left">
+            <button id="menuToggleBtn" class="menu-btn" title="Historial de Sesiones">☰</button>
+            <img src="logo.png" alt="Logo de Fácil con AI Agent" class="app-logo">
+            <h1>Fácil con AI Agent</h1>
+            <span class="subtitle-badge">Ciencias · LaTeX · Python · R · Julia</span>
+        </div>
+        <div class="controls">
+            <div class="model-group">
+                <label for="modeSelect">Modo:</label>
+                <select id="modeSelect" title="Cambia el system prompt del asistente">
+                    <option value="ciencias" selected>🔬 Ciencias</option>
+                    <option value="web">🌐 Web</option>
+                </select>
+                <label for="modelSelect">Modelo:</label>
+                <select id="modelSelect">
+                    <option value="">Cargando modelos...</option>
+                </select>
+                <span id="providerBadge" class="provider-badge" title="Proveedor activo — clic para cambiar">🦙 Ollama</span>
+                <button id="openProviderBtn" class="icon-btn" title="Elegir proveedor / agente (nube o local)">🌐</button>
+                <button id="openModelManagerBtn" class="icon-btn" title="Gestionar Modelos">⚙️</button>
+            </div>
+            <div class="header-installer">
+                <a href="https://ollama.com/search" target="_blank" class="explore-btn" id="exploreBtn" title="Explorar Biblioteca">🔍 Buscar Modelos</a>
+                <input type="text" id="modelInstallInput" placeholder="Nombre (ej: deepseek-v2)">
+                <button type="button" id="installBtn">🚀 Instalar</button>
+            </div>
+        </div>
+        <div id="installerStatus" class="installer-status-header"></div>
+    </header>
+
+    <main class="container">
+        <aside class="sidebar collapsed" id="sidebar">
+            <button id="newChatBtn" class="new-chat-btn">➕ Nueva Sesión</button>
+            <div class="export-chat-actions">
+                <button id="exportMdBtn" class="export-btn" title="Exportar chat a Markdown">📄 Markdown</button>
+                <button id="exportPdfBtn" class="export-btn" title="Exportar chat a PDF">📑 PDF</button>
+            </div>
+            <div class="session-list" id="sessionList"></div>
+        </aside>
+
+        <section class="panel left-panel" id="leftPanel">
+            <div class="chat-history" id="chatHistory"></div>
+            <div id="attachmentPreview" class="attachment-preview hidden"></div>
+            <form class="chat-input-form" id="chatForm">
+                <button type="button" id="attachBtn" class="attach-btn" title="Adjuntar Archivo">📎</button>
+                <input type="file" id="fileInput" class="hidden-file-input" accept=".jpg,.jpeg,.png,.txt,.md,.js,.html,.css,.py,.r,.R,.jl,.tex,.bib,.csv,.json" />
+                <textarea id="promptInput" placeholder="Pide un documento LaTeX, script en Python/R/Julia, o resuelve un problema de ciencias... (Enter enviar, Shift+Enter nueva línea)"></textarea>
+                <button type="button" id="sendButton">Enviar</button>
+            </form>
+        </section>
+
+        <div class="resizer" id="dragMe"></div>
+
+        <section class="panel right-panel" id="rightPanel">
+            <div class="sandbox-header">
+                <h2>Sandbox</h2>
+                <div class="sandbox-actions">
+                    <button id="downloadCodeBtn" title="Descargar código actual">💾 Descargar Código</button>
+                    <button id="downloadZipBtn" title="Descargar como Proyecto .zip">📦 Descargar Proyecto ZIP</button>
+                    <button id="openNewTabBtn">Abrir en nueva pestaña</button>
+                </div>
+            </div>
+            <div class="iframe-container">
+                <iframe id="sandboxIframe"></iframe>
+                <div id="python-output" class="hidden"></div>
+                <pre id="code-output" class="hidden code-viewer"></pre>
+            </div>
+        </section>
+    </main>
+
+    <div id="model-manager-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Gestor de Modelos Ollama</h2>
+                <button id="closeModelManagerBtn" class="close-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description">Aquí puedes ver tus modelos instalados y eliminar los que ya no necesites para liberar espacio.</p>
+                <ul id="model-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <div id="provider-modal" class="modal-overlay hidden">
+        <div class="modal-content provider-modal">
+            <div class="modal-header">
+                <h2>🌐 Proveedor / Agente de IA</h2>
+                <button id="closeProviderBtn" class="close-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description">Elige dónde se ejecutan tus modelos: en local (Ollama, LM Studio) o en la nube (OpenAI, Anthropic, Gemini, OpenRouter, 9Router, FreeLLMAPI, OmniRoute u otro compatible con OpenAI).</p>
+                <div id="providerGrid" class="provider-grid"></div>
+
+                <div id="providerForm" class="provider-form hidden">
+                    <button type="button" id="backProviderBtn" class="back-provider-btn">← Volver a la lista</button>
+                    <h3 id="providerFormTitle" class="provider-form-title">Configurar proveedor</h3>
+
+                    <label class="pf-label" for="providerUrlInput">URL base (endpoint)</label>
+                    <input type="text" id="providerUrlInput" class="pf-input" placeholder="https://api.tuservicio.com/v1" spellcheck="false" autocomplete="off">
+                    <p id="providerHint" class="pf-hint"></p>
+
+                    <label class="pf-label" for="providerKeyInput">API Key</label>
+                    <div class="pf-row">
+                        <input type="password" id="providerKeyInput" class="pf-input" placeholder="sk-..." spellcheck="false" autocomplete="off">
+                        <button type="button" id="toggleKeyBtn" class="pf-mini-btn" title="Mostrar / ocultar clave">👁️</button>
+                    </div>
+                    <p class="pf-hint">La clave se guarda únicamente en este navegador (localStorage).</p>
+
+                    <label class="pf-label" for="providerModelInput">Modelos del proveedor</label>
+                    <div class="pf-row">
+                        <input type="text" id="providerModelInput" class="pf-input" placeholder="ej: gpt-4o-mini, claude-sonnet-4.5" spellcheck="false" autocomplete="off">
+                        <button type="button" id="addProviderModelBtn" class="pf-mini-btn wide">➕ Añadir</button>
+                    </div>
+                    <ul id="manualModelList" class="manual-model-list"></ul>
+
+                    <div id="providerFormStatus" class="pf-status"></div>
+
+                    <div class="pf-actions">
+                        <button type="button" id="fetchModelsBtn" class="pf-btn ghost">🔄 Cargar modelos</button>
+                        <button type="button" id="saveProviderBtn" class="pf-btn">💾 Guardar</button>
+                        <button type="button" id="useProviderBtn" class="pf-btn primary">✅ Usar este proveedor</button>
+                    </div>
+
+                    <a id="providerDocsLink" class="pf-docs hidden" target="_blank" rel="noopener"></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
