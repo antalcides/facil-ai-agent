@@ -4,9 +4,9 @@
   <img src="logo.png" alt="Fácil con AI Agent Logo" width="120"/>
 </p>
 
-
-  **Tu estudio local de *ciencias* y *programación científica* — 100% privado, _sin suscripciones_ en local y en la nube.**
-
+<p align="center">  
+  <b>Tu estudio local de ciencias y programación científica * 100% privado sin suscripción, en local y en la nube.</b>
+</p>
 
 
 
