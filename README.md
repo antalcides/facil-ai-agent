@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">  
-  <b>Tu estudio local de ciencias y programación científica * 100% privado sin suscripción, en local y en la nube.</b>
+  <b>Tu estudio local de ciencias y programación científica -- 100% privado sin suscripción, en local y en la nube.</b>
 </p>
 
 
