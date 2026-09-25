@@ -4,9 +4,13 @@
   <img src="logo.png" alt="Fácil con AI Agent Logo" width="120"/>
 </p>
 
-<p align="center">
-  <strong>Tu estudio local de ciencias y programación científica — 100% privado, sin suscripciones, sin nube.</strong>
-</p>
+
+  **Tu estudio local de *ciencias* y *programación científica* — 100% privado, _sin suscripciones_ en local y en la nube.**
+
+
+
+
+
 
 <p align="center">
   <img src="https://img.shields.io/badge/Ollama-compatible-blueviolet?style=flat-square" />
